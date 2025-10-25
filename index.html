@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chá de Casa Nova — Lista de Presentes</title>
+  <title>Lista de Presentes — Chá de Casa Nova</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -58,7 +58,7 @@
 <body>
 
   <h1>🎁 Lista de Presentes — Chá de Casa Nova</h1>
-  <p>Escolha um presente para nos ajudar a montar nosso novo lar 💚</p>
+  <p>Escolha um presente e nos ajude a montar nosso novo lar 💚</p>
 
   <table id="listaPresentes">
     <thead>
@@ -76,37 +76,37 @@
   <div class="footer">Com carinho, Adryel e [Nome da Noiva] 💍</div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxIjTiH55AQYA-6ozwpfOCUD8O8mfmBzMsmIbeVeQ7OkTCudbctm858YGn2RIZjS6_U/exec";
-  async function carregarPresentes() {
-    try {
-      const response = await fetch(API_URL);
-      const data = await response.json();
+    const API_URL = "https://script.google.com/macros/s/AKfycbzZq5oXpcXEnh-9E3H7odc4YO7QMyzq3X0eY5zJKCJjecFBh2BZmST_EJ0DikMuJuLP/exec";
 
-      const tbody = document.querySelector("#listaPresentes tbody");
-      tbody.innerHTML = "";
+    async function carregarPresentes() {
+      try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
 
-      data.forEach(item => {
-        const tr = document.createElement("tr");
+        const tbody = document.querySelector("#listaPresentes tbody");
+        tbody.innerHTML = "";
 
-        const tdPresente = document.createElement("td");
-        tdPresente.textContent = item.presente;
+        data.forEach(item => {
+          const tr = document.createElement("tr");
 
-        const tdStatus = document.createElement("td");
-        const statusAtual = (item.status || "disponivel").toLowerCase();
-        tdStatus.textContent = statusAtual === "reservado" ? "Reservado" : "Disponível";
-        tdStatus.style.color = statusAtual === "reservado" ? "red" : "green";
+          const tdPresente = document.createElement("td");
+          tdPresente.textContent = item.Presente;
 
-        const tdAcao = document.createElement("td");
-        const btn = document.createElement("button");
+          const tdStatus = document.createElement("td");
+          tdStatus.textContent = item.Status || "disponivel";
+          tdStatus.style.color = item.Status === "reservado" ? "red" : "green";
 
-        if (statusAtual === "reservado") {
-          btn.textContent = "Disponibilizar";
-          btn.style.background = "#777";
+          const tdAcao = document.createElement("td");
+          const btn = document.createElement("button");
+          btn.textContent = item.Status === "reservado" ? "Indisponível" : "Presentear";
+          btn.disabled = item.Status === "reservado";
+
           btn.onclick = async () => {
-            const confirmacao = confirm(`Deseja tornar "${item.presente}" disponível novamente?`);
-            if (!confirmacao) return;
+            const confirmar = confirm(`Deseja reservar o presente "${item.Presente}"?`);
+            if (!confirmar) return;
 
-            const payload = { presente: item.presente, convidado: "" }; // zera o nome
+            const payload = { presente: item.Presente };
+
             const resp = await fetch(API_URL, {
               method: "POST",
               body: JSON.stringify(payload),
@@ -117,39 +117,20 @@
             alert(result.message);
             if (result.status === "success") carregarPresentes();
           };
-        } else {
-          btn.textContent = "Presentear";
-          btn.style.background = "#4CAF50";
-          btn.onclick = async () => {
-            const nome = prompt("Digite seu nome para confirmar o presente:");
-            if (!nome) return;
-            const confirmacao = confirm(`Tem certeza que deseja reservar "${item.presente}"?`);
-            if (!confirmacao) return;
 
-            const payload = { presente: item.presente, convidado: nome };
-            const resp = await fetch(API_URL, {
-              method: "POST",
-              body: JSON.stringify(payload),
-              headers: { "Content-Type": "application/json" }
-            });
-
-            const result = await resp.json();
-            alert(result.message);
-            if (result.status === "success") carregarPresentes();
-          };
-        }
-
-        tdAcao.appendChild(btn);
-        tr.appendChild(tdPresente);
-        tr.appendChild(tdStatus);
-        tr.appendChild(tdAcao);
-        tbody.appendChild(tr);
-      });
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao carregar a lista de presentes.");
+          tdAcao.appendChild(btn);
+          tr.appendChild(tdPresente);
+          tr.appendChild(tdStatus);
+          tr.appendChild(tdAcao);
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error(err);
+        alert("Erro ao carregar a lista de presentes.");
+      }
     }
-  }
 
-  carregarPresentes();
-</script>
+    carregarPresentes();
+  </script>
+</body>
+</html>
