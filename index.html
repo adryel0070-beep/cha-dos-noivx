@@ -77,38 +77,36 @@
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbxIjTiH55AQYA-6ozwpfOCUD8O8mfmBzMsmIbeVeQ7OkTCudbctm858YGn2RIZjS6_U/exec";
+  async function carregarPresentes() {
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
 
-    async function carregarPresentes() {
-      try {
-        const response = await fetch(API_URL);
-        const data = await response.json();
+      const tbody = document.querySelector("#listaPresentes tbody");
+      tbody.innerHTML = "";
 
-        const tbody = document.querySelector("#listaPresentes tbody");
-        tbody.innerHTML = "";
+      data.forEach(item => {
+        const tr = document.createElement("tr");
 
-        data.forEach(item => {
-          const tr = document.createElement("tr");
+        const tdPresente = document.createElement("td");
+        tdPresente.textContent = item.presente;
 
-          const tdPresente = document.createElement("td");
-          tdPresente.textContent = item.presente;
+        const tdStatus = document.createElement("td");
+        const statusAtual = (item.status || "disponivel").toLowerCase();
+        tdStatus.textContent = statusAtual === "reservado" ? "Reservado" : "Disponível";
+        tdStatus.style.color = statusAtual === "reservado" ? "red" : "green";
 
-          const tdStatus = document.createElement("td");
-          tdStatus.textContent = item.status || "Disponível";
-          tdStatus.style.color = item.status === "Reservado" ? "red" : "green";
+        const tdAcao = document.createElement("td");
+        const btn = document.createElement("button");
 
-          const tdAcao = document.createElement("td");
-          const btn = document.createElement("button");
-          btn.textContent = item.status === "Reservado" ? "Indisponível" : "Presentear";
-          btn.disabled = item.status === "Reservado";
-
+        if (statusAtual === "reservado") {
+          btn.textContent = "Disponibilizar";
+          btn.style.background = "#777";
           btn.onclick = async () => {
-            const nome = prompt("Digite seu nome para confirmar o presente:");
-            if (!nome) return;
-            const confirmacao = confirm(Tem certeza que deseja reservar "${item.presente}"?);
+            const confirmacao = confirm(`Deseja tornar "${item.presente}" disponível novamente?`);
             if (!confirmacao) return;
 
-            const payload = { presente: item.presente, convidado: nome };
-
+            const payload = { presente: item.presente, convidado: "" }; // zera o nome
             const resp = await fetch(API_URL, {
               method: "POST",
               body: JSON.stringify(payload),
@@ -117,25 +115,41 @@
 
             const result = await resp.json();
             alert(result.message);
-
             if (result.status === "success") carregarPresentes();
           };
+        } else {
+          btn.textContent = "Presentear";
+          btn.style.background = "#4CAF50";
+          btn.onclick = async () => {
+            const nome = prompt("Digite seu nome para confirmar o presente:");
+            if (!nome) return;
+            const confirmacao = confirm(`Tem certeza que deseja reservar "${item.presente}"?`);
+            if (!confirmacao) return;
 
-          tdAcao.appendChild(btn);
+            const payload = { presente: item.presente, convidado: nome };
+            const resp = await fetch(API_URL, {
+              method: "POST",
+              body: JSON.stringify(payload),
+              headers: { "Content-Type": "application/json" }
+            });
 
-          tr.appendChild(tdPresente);
-          tr.appendChild(tdStatus);
-          tr.appendChild(tdAcao);
-          tbody.appendChild(tr);
-        });
-      } catch (err) {
-        console.error(err);
-        alert("Erro ao carregar a lista de presentes.");
-      }
+            const result = await resp.json();
+            alert(result.message);
+            if (result.status === "success") carregarPresentes();
+          };
+        }
+
+        tdAcao.appendChild(btn);
+        tr.appendChild(tdPresente);
+        tr.appendChild(tdStatus);
+        tr.appendChild(tdAcao);
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao carregar a lista de presentes.");
     }
+  }
 
-    carregarPresentes();
-  </script>
-</body>
-</html>
-
+  carregarPresentes();
+</script>
