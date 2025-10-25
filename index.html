@@ -93,7 +93,7 @@
           tdPresente.textContent = item.presente;
 
           const tdStatus = document.createElement("td");
-          tdStatus.textContent = item.status || "Disponível";
+          tdStatus.textContent = item.status || "disponivel";
           tdStatus.style.color = item.status === "Reservado" ? "red" : "green";
 
           const tdAcao = document.createElement("td");
@@ -138,6 +138,7 @@
   </script>
 </body>
 </html>
+
 
 
 
