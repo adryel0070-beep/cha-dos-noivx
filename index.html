@@ -78,62 +78,89 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyULpS5U5sa0CRy3f02DtovhiDNUFksfcYOy2JKOdrSbe6nCCDa-WN9oMRwzcmFyrWr/exec";
 
-    async function carregarPresentes() {
-      try {
-        const response = await fetch(API_URL);
-        const data = await response.json();
+  // JSONP helper: injeta <script> e chama callbackName quando o servidor responder
+  function jsonpRequest(url, callbackName) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      // define global callback
+      window[callbackName] = function(data) {
+        resolve(data);
+        // cleanup
+        script.remove();
+        try { delete window[callbackName]; } catch(e){ window[callbackName] = undefined; }
+      };
+      script.onerror = function(e){
+        reject(new Error('Erro JSONP'));
+        script.remove();
+        try { delete window[callbackName]; } catch(e){ window[callbackName] = undefined; }
+      };
+      script.src = url + (url.indexOf('?') === -1 ? '?' : '&') + 'callback=' + encodeURIComponent(callbackName);
+      document.head.appendChild(script);
+    });
+  }
 
-        const tbody = document.querySelector("#listaPresentes tbody");
-        tbody.innerHTML = "";
-
-        data.forEach(item => {
-          const tr = document.createElement("tr");
-
-          const tdPresente = document.createElement("td");
-          tdPresente.textContent = item.Presente;
-
-          const tdStatus = document.createElement("td");
-          tdStatus.textContent = item.Status || "disponivel";
-          tdStatus.style.color = item.Status === "reservado" ? "red" : "green";
-
-          const tdAcao = document.createElement("td");
-          const btn = document.createElement("button");
-          btn.textContent = item.Status === "reservado" ? "Indisponível" : "Presentear";
-          btn.disabled = item.Status === "reservado";
-
-          btn.onclick = async () => {
-            const confirmar = confirm(`Deseja reservar o presente "${item.Presente}"?`);
-            if (!confirmar) return;
-
-            const payload = { presente: item.Presente };
-
-            const resp = await fetch(API_URL, {
-              method: "POST",
-              body: JSON.stringify(payload),
-              headers: { "Content-Type": "application/json" }
-            });
-
-            const result = await resp.json();
-            alert(result.message);
-            if (result.status === "success") carregarPresentes();
-          };
-
-          tdAcao.appendChild(btn);
-          tr.appendChild(tdPresente);
-          tr.appendChild(tdStatus);
-          tr.appendChild(tdAcao);
-          tbody.appendChild(tr);
-        });
-      } catch (err) {
-        console.error(err);
-        alert("Erro ao carregar a lista de presentes.");
-      }
+  // carrega lista
+  async function carregarPresentes() {
+    try {
+      const cb = 'cbList_' + Date.now();
+      const url = API_BASE + '?action=list';
+      const data = await jsonpRequest(url, cb); // data é array de objetos
+      renderLista(data);
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao carregar a lista (JSONP).');
     }
+  }
 
-    carregarPresentes();
-  </script>
-</body>
-</html>
+  function renderLista(data) {
+    const tbody = document.querySelector("#listaPresentes tbody");
+    tbody.innerHTML = '';
+    data.forEach(item => {
+      const tr = document.createElement('tr');
+      const tdPres = document.createElement('td');
+      tdPres.textContent = item.Presente || item.presente || '';
+
+      const tdStatus = document.createElement('td');
+      const status = (item.Status || item.status || 'disponivel').toString().toLowerCase();
+      tdStatus.textContent = status === 'reservado' ? 'reservado' : 'disponivel';
+      tdStatus.style.color = status === 'reservado' ? 'red' : 'green';
+
+      const tdAcao = document.createElement('td');
+      const btn = document.createElement('button');
+      if (status === 'reservado') {
+        btn.textContent = 'Reservado';
+        btn.disabled = true;
+      } else {
+        btn.textContent = 'Reservar';
+        btn.onclick = () => reservarPresente(tdPres.textContent);
+      }
+
+      tdAcao.appendChild(btn);
+      tr.appendChild(tdPres);
+      tr.appendChild(tdStatus);
+      tr.appendChild(tdAcao);
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function reservarPresente(presente) {
+    const ok = confirm(`Deseja reservar o presente "${presente}"?`);
+    if (!ok) return;
+    try {
+      const cb = 'cbRes_' + Date.now();
+      const url = API_BASE + '?action=reserve&presente=' + encodeURIComponent(presente);
+      const result = await jsonpRequest(url, cb);
+      alert(result.message || (result.status || 'erro'));
+      if (result.status === 'success') carregarPresentes();
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao reservar (JSONP).');
+    }
+  }
+
+  // inicializa
+  carregarPresentes();
+</script>
 
 
 
